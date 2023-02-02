@@ -37,14 +37,34 @@
 </template>
 
 <script setup name="StorageBatch">
-import { reactive, toRefs } from 'vue'
+import { reactive, toRefs, onMounted } from 'vue'
+import warehouseService from '@/api/warehouse-service'
+import storageService from '@/api/storage-service'
 
 const state = reactive({
+  loading: false,
   value: '',
-  tableData: []
+  tableData: [],
+  warehouseList: []
 })
 
 const { value, tableData } = toRefs(state)
+
+const initData = () => {
+  state.loading = true
+  warehouseService
+    .addWarehouseWarehouseList({ pageNo: 1, pageSize: 50 })
+    .then(({ data }) => {
+      state.warehouseList = data
+      storageService.addStorageSorderScodeList({})
+    })
+    .catch(() => {
+      state.loading = false
+    })
+}
+onMounted(() => {
+  initData()
+})
 </script>
 
 <style lang="scss">
