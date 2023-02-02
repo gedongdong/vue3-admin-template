@@ -103,7 +103,7 @@ export const asyncRoutes = [
         component: () => import('@/views/storage/batch/index.vue'),
         name: 'StorageBatch',
         meta: {
-          title: '入库码批量生产',
+          title: '入库码批量生成',
           icon: 'icon',
           roles: ['admin']
         }

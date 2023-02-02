@@ -1,5 +1,5 @@
 <template>
-  <div class="add-container">
+  <div v-loading="loading" class="add-container">
     <div class="form-wrapper">
       <div class="form-item">
         <div class="form-item-label">创建时间：</div>
@@ -15,10 +15,10 @@
         <div class="form-item-label">所在仓库：</div>
         <el-select v-model="cangku" filterable placeholder="请选择仓库">
           <el-option
-            v-for="item in cangkuList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in warehouseList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
           />
         </el-select>
       </div>
@@ -38,7 +38,7 @@
           filterable
           remote
           reserve-keyword
-          placeholder="请选择仓库"
+          placeholder="请选择识别码"
           remote-show-suffix
           :remote-method="codeRemoteMethod"
           :loading="codeLoading"
@@ -180,28 +180,20 @@
 </template>
 
 <script setup name="StorageAdd">
-import { reactive, toRefs, nextTick } from 'vue'
+import { reactive, toRefs, nextTick, onMounted } from 'vue'
 import storageService from '@/api/storage-service'
+import warehouseService from '@/api/warehouse-service'
+import useAudioHook from '@/hooks/useAudioHook.js'
+
+const audioHook = useAudioHook()
 
 const state = reactive({
+  loading: false,
   shijian: new Date().getTime(),
   fixedShijian: false,
   cangku: '',
-  cangkuList: [
-    {
-      value: 'Option1',
-      label: 'Option1'
-    },
-    {
-      value: 'Option2',
-      label: 'Option2'
-    },
-    {
-      value: 'Option3',
-      label: 'Option3'
-    }
-  ],
-  weight: '',
+  warehouseList: [],
+  weight: 0.1,
   fixedZhongliang: false,
   codeLoading: false,
   code: '',
@@ -226,10 +218,11 @@ const state = reactive({
 })
 
 const {
+  loading,
   shijian,
   fixedShijian,
   cangku,
-  cangkuList,
+  warehouseList,
   weight,
   fixedZhongliang,
   codeLoading,
@@ -249,7 +242,7 @@ const handleWeightEnter = () => {
 }
 
 const handleScodeEnter = () => {
-  // 声音提示
+  audioHook.successAudio()
   document.getElementById(`number`).focus()
 }
 
@@ -259,12 +252,11 @@ const handleNumberEnter = () => {
 }
 
 const codeRemoteMethod = (query) => {
-  console.log(query)
   state.codeLoading = true
   storageService
-    .addStorageCodeSearch({ code: query })
-    .then((codeList) => {
-      state.codeList = codeList
+    .addStorageStorageList({ code: query })
+    .then(({ data }) => {
+      state.codeList = data
     })
     .finally(() => {
       state.codeLoading = false
@@ -272,25 +264,27 @@ const codeRemoteMethod = (query) => {
 }
 
 const handleAutoFoucs = () => {
-  for (let i = 0; i < state.goodsList.length; i++) {
-    const item = state.goodsList[i]
-    if (!item.sku) {
-      document.getElementById(`${i}_sku`).focus()
-      break
-    } else if (!item.brand) {
-      document.getElementById(`${i}_brand`).focus()
-      break
-    } else if (!item.no) {
-      document.getElementById(`${i}_no`).focus()
-      break
-    } else if (!item.title) {
-      document.getElementById(`${i}_title`).focus()
-      break
-    } else if (!item.spec) {
-      document.getElementById(`${i}_spec`).focus()
-      break
+  nextTick(() => {
+    for (let i = 0; i < state.goodsList.length; i++) {
+      const item = state.goodsList[i]
+      if (!item.sku) {
+        document.getElementById(`${i}_sku`).focus()
+        break
+      } else if (!item.brand) {
+        document.getElementById(`${i}_brand`).focus()
+        break
+      } else if (!item.no) {
+        document.getElementById(`${i}_no`).focus()
+        break
+      } else if (!item.title) {
+        document.getElementById(`${i}_title`).focus()
+        break
+      } else if (!item.spec) {
+        document.getElementById(`${i}_spec`).focus()
+        break
+      }
     }
-  }
+  })
 }
 
 const handleSkuEnter = (row, index) => {
@@ -309,9 +303,7 @@ const handleSkuEnter = (row, index) => {
       images: ''
     }
     handleAddItem()
-    nextTick(() => {
-      handleAutoFoucs()
-    })
+    handleAutoFoucs()
     // 语音提示当前下标
   } else {
     // 语音提示该sku不存在
@@ -349,6 +341,22 @@ const handleCopyItem = (index) => {
 const handleSaveItem = (index) => {
   console.log(index)
 }
+
+const initData = () => {
+  state.loading = true
+  warehouseService
+    .addWarehouseWarehouseList({ pageNo: 1, pageSize: 50 })
+    .then(({ data }) => {
+      state.warehouseList = data
+    })
+    .finally(() => {
+      state.loading = false
+    })
+}
+
+onMounted(() => {
+  initData()
+})
 </script>
 
 <style lang="scss" scoped>

@@ -1,11 +1,11 @@
 import request from '@/utils/request'
 
 /**
- * @method addStorageCodeSearch
+ * @method addStorageStorageList
  * @param {*} data
  */
-const addStorageCodeSearch = (data) => {
-  return request.post('/storage/code_search', data)
+const addStorageStorageList = (data) => {
+  return request.post('/storage/storageList', data)
 }
 /**
  * @method addStorageSorderScodeList
@@ -16,6 +16,6 @@ const addStorageSorderScodeList = (data) => {
 }
 
 export default {
-  addStorageCodeSearch,
+  addStorageStorageList,
   addStorageSorderScodeList
 }
