@@ -39,13 +39,29 @@
           name="password"
           tabindex="2"
           autocomplete="on"
-          @keyup.enter="handleLogin"
         />
         <span class="show-pwd" @click="showPwd()">
           <svg-icon :name="passwordType === 'password' ? 'eye' : 'eye-open'" />
         </span>
       </el-form-item>
-
+      <el-form-item prop="verify">
+        <span class="svg-container">
+          <svg-icon name="password" />
+        </span>
+        <el-input
+          v-model="loginForm.verify"
+          placeholder="验证码"
+          tabindex="3"
+          :maxlength="4"
+          autocomplete="on"
+          @keyup.enter="handleLogin"
+        />
+        <el-image
+          @click="handleResetVerificationInfo"
+          class="verification-content"
+          :src="verificationInfo.content"
+        />
+      </el-form-item>
       <el-button
         :loading="loading"
         type="primary"
@@ -62,7 +78,10 @@
 import { nextTick, onMounted, reactive, toRefs } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useRouter, useRoute } from 'vue-router'
+import verifyCodeService from '@/api/verifyCode-service'
+import LoginService from '@/api/login-service'
 
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -75,8 +94,18 @@ const validateUsername = (rule, value, callback) => {
 }
 
 const validatePassword = (rule, value, callback) => {
-  if (value.length < 6) {
-    callback(new Error('The password can not be less than 6 digits'))
+  if (!value) {
+    callback(new Error('Please enter the correct user password'))
+  } else {
+    callback()
+  }
+}
+
+const validateVerify = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('Please enter the correct verify'))
+  } else if (value.length !== 4) {
+    callback(new Error('The verify can not be less than 4 digits'))
   } else {
     callback()
   }
@@ -87,20 +116,28 @@ const state = reactive({
   refUsername: null,
   refPassword: null,
   loginForm: {
-    username: 'admin',
-    password: '123456789'
+    username: 'jz',
+    password: 'aaaaaa',
+    verify: ''
   },
   loginRules: {
     username: [
       { required: true, trigger: 'blur', validator: validateUsername }
     ],
-    password: [{ required: true, trigger: 'blur', validator: validatePassword }]
+    password: [
+      { required: true, trigger: 'blur', validator: validatePassword }
+    ],
+    verify: [{ required: true, trigger: 'blur', validator: validateVerify }]
   },
   passwordType: 'password',
   loading: false,
   showDialog: false,
   redirect: undefined,
-  otherQuery: {}
+  otherQuery: {},
+  verificationInfo: {
+    content: '',
+    uniqid: ''
+  }
 })
 
 const {
@@ -110,7 +147,8 @@ const {
   loginForm,
   loginRules,
   passwordType,
-  loading
+  loading,
+  verificationInfo
 } = toRefs(state)
 
 const getOtherQuery = (query) => {
@@ -137,15 +175,45 @@ const handleLogin = () => {
   state.refLoginForm.validate(async (valid) => {
     if (valid) {
       state.loading = true
-      const userStore = useUserStore()
-      await userStore.login(state.loginForm)
-      state.loading = false
-      router.push({ path: state.redirect || '/', query: state.otherQuery })
+      LoginService.addLogin({
+        username: state.loginForm.username,
+        password: state.loginForm.password,
+        verify: state.loginForm.verify,
+        uniqid: state.verificationInfo.uniqid
+      })
+        .then(({ token }) => {
+          userStore.setToken(token)
+          LoginService.getLoginUserInfo()
+            .then((userInfo) => {
+              userStore.setUserInfo(userInfo)
+              router.push({
+                path: state.redirect || '/',
+                query: state.otherQuery
+              })
+            })
+            .finally(() => {
+              state.loading = false
+            })
+        })
+        .catch(() => {
+          handleResetVerificationInfo()
+          state.loading = false
+        })
     } else {
       console.log('error submit!!')
       return false
     }
   })
+}
+
+const handleResetVerificationInfo = () => {
+  initData()
+}
+
+const initData = async () => {
+  const { content, uniqid } = await verifyCodeService.addVerifyCodeVerify()
+  state.verificationInfo.content = content
+  state.verificationInfo.uniqid = uniqid
 }
 
 onMounted(() => {
@@ -159,6 +227,7 @@ onMounted(() => {
     state.redirect = query.redirect
     state.otherQuery = getOtherQuery(query)
   }
+  initData()
 })
 </script>
 
@@ -264,6 +333,14 @@ $light_gray: #eee;
     color: $dark_gray;
     cursor: pointer;
     user-select: none;
+  }
+
+  .verification-content {
+    position: absolute;
+    right: 10px;
+    width: 120px;
+    height: 40px;
+    cursor: pointer;
   }
 }
 </style>

@@ -14,7 +14,14 @@ export default defineConfig({
   server: {
     open: true,
     host: '0.0.0.0',
-    port: 9527
+    port: 9527,
+    proxy: {
+      '/api': {
+        target: 'https://youjiaapi.itnote.me/index.php/admin',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   },
   resolve: {
     alias: {

@@ -1,12 +1,12 @@
 <template>
-  <div class="app-container">
+  <div class="add-container">
     <div class="form-wrapper">
       <div class="form-item">
         <div class="form-item-label">创建时间：</div>
         <el-date-picker
           v-model="shijian"
           format="YYYY-MM-DD hh:mm:ss"
-          type="date"
+          type="datetime"
           placeholder="Pick a day"
         />
         <el-checkbox v-model="fixedShijian" label="固定" border />
@@ -24,31 +24,56 @@
       </div>
       <div class="form-item">
         <div class="form-item-label">重量：</div>
-        <el-input v-model="zhongliang" placeholder="请输入重量" />
+        <el-input
+          @keyup.enter="handleWeightEnter"
+          v-model="weight"
+          placeholder="请输入重量"
+        />
         <el-checkbox v-model="fixedZhongliang" label="固定" border />
       </div>
       <div class="form-item">
         <div class="form-item-label">识别码：</div>
-        <el-select v-model="shibiema" placeholder="请选择仓库">
+        <el-select
+          v-model="code"
+          filterable
+          remote
+          reserve-keyword
+          placeholder="请选择仓库"
+          remote-show-suffix
+          :remote-method="codeRemoteMethod"
+          :loading="codeLoading"
+        >
           <el-option
-            v-for="item in shibiemaList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in codeList"
+            :key="item.id"
+            :label="item.code"
+            :value="item.code"
           />
         </el-select>
       </div>
       <div class="form-item">
         <div class="form-item-label">入库码：</div>
-        <el-input v-model="rukuma" placeholder="请输入重量" />
+        <el-input
+          @keyup.enter="handleScodeEnter"
+          v-model="scode"
+          placeholder="请输入重量"
+          id="scode"
+        />
       </div>
       <div class="form-item">
         <div class="form-item-label">美国境内单号：</div>
-        <el-input v-model="meiguojingneidanhao" placeholder="请输入重量" />
+        <el-input
+          @keyup.enter="handleNumberEnter"
+          v-model="number"
+          placeholder="请输入重量"
+          id="number"
+        />
+        <div class="form-tips">单号已入库</div>
       </div>
       <div class="form-item">
         <div class="form-item-label">备注(选填)：</div>
-        <el-input v-model="beizhu" placeholder="前台客服留言" />
+        <el-input v-model="kf_message" placeholder="前台客服留言" />
+        <div class="form-tips">单号已入库</div>
       </div>
     </div>
     <el-table :data="goodsList">
@@ -117,17 +142,46 @@
           <el-input v-model="row.bs"></el-input>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" label="Operations" width="120">
-        <template #default>
-          <el-button type="primary">保存</el-button>
+      <el-table-column fixed="right" label="操作" width="350" align="center">
+        <template #default="{ $index }">
+          <el-button
+            v-if="$index === 0"
+            @click="handleAddItem"
+            type="primary"
+            size="default"
+            >增加</el-button
+          >
+          <el-button
+            v-if="goodsList.length > 1"
+            @click="handleRemoveItem($index)"
+            type="warning"
+            size="default"
+            >减少</el-button
+          >
+          <el-button
+            @click="handleCopyItem($index)"
+            type="success"
+            size="default"
+            >复制</el-button
+          >
+          <el-button
+            @click="handleSaveItem($index)"
+            type="primary"
+            size="default"
+            >保存</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
+    <div class="submit-wrapper">
+      <el-button type="primary">提交</el-button>
+    </div>
   </div>
 </template>
 
-<script setup name="WarehouseAdd">
+<script setup name="StorageAdd">
 import { reactive, toRefs, nextTick } from 'vue'
+import storageService from '@/api/storage-service'
 
 const state = reactive({
   shijian: new Date().getTime(),
@@ -147,26 +201,14 @@ const state = reactive({
       label: 'Option3'
     }
   ],
-  zhongliang: '',
+  weight: '',
   fixedZhongliang: false,
-  shibiema: '',
-  shibiemaList: [
-    {
-      value: 'Option1',
-      label: 'Option1'
-    },
-    {
-      value: 'Option2',
-      label: 'Option2'
-    },
-    {
-      value: 'Option3',
-      label: 'Option3'
-    }
-  ],
-  rukuma: '',
-  meiguojingneidanhao: '',
-  beizhu: '',
+  codeLoading: false,
+  code: '',
+  codeList: [],
+  scode: '',
+  number: '',
+  kf_message: '',
   goodsList: [
     {
       sku: '',
@@ -180,7 +222,7 @@ const state = reactive({
       bs: ''
     }
   ],
-  refList: []
+  checkNumberInfo: null
 })
 
 const {
@@ -188,15 +230,46 @@ const {
   fixedShijian,
   cangku,
   cangkuList,
-  zhongliang,
+  weight,
   fixedZhongliang,
-  shibiema,
-  shibiemaList,
-  rukuma,
-  meiguojingneidanhao,
-  beizhu,
+  codeLoading,
+  code,
+  codeList,
+  scode,
+  number,
+  kf_message,
   goodsList
 } = toRefs(state)
+
+const handleWeightEnter = () => {
+  if (!state.weight) {
+    state.weight = 0.1
+  }
+  document.getElementById(`scode`).focus()
+}
+
+const handleScodeEnter = () => {
+  // 声音提示
+  document.getElementById(`number`).focus()
+}
+
+const handleNumberEnter = () => {
+  // 调用接口查询数据， 成功了展示预报信息并音乐提示，不存在文字提示
+  handleAutoFoucs()
+}
+
+const codeRemoteMethod = (query) => {
+  console.log(query)
+  state.codeLoading = true
+  storageService
+    .addStorageCodeSearch({ code: query })
+    .then((codeList) => {
+      state.codeList = codeList
+    })
+    .finally(() => {
+      state.codeLoading = false
+    })
+}
 
 const handleAutoFoucs = () => {
   for (let i = 0; i < state.goodsList.length; i++) {
@@ -221,7 +294,7 @@ const handleAutoFoucs = () => {
 }
 
 const handleSkuEnter = (row, index) => {
-  // 调用接口，当前sku存在，使用接口返回数据赋值，自动创建下一个item
+  // 调用接口，当前sku存在，使用接口返回数据赋值，自动创建下一个item， 不存在音乐提示
   // 模拟成功
   if (row.sku === '2') {
     state.goodsList[index] = {
@@ -235,17 +308,7 @@ const handleSkuEnter = (row, index) => {
       source_area: '',
       images: ''
     }
-    state.goodsList.push({
-      sku: '',
-      brand: '',
-      no: '',
-      title: '',
-      spec: '',
-      category: '',
-      source_area: '',
-      price: '',
-      bs: ''
-    })
+    handleAddItem()
     nextTick(() => {
       handleAutoFoucs()
     })
@@ -259,16 +322,65 @@ const handleSkuEnter = (row, index) => {
 
   // sku不存在
 }
+
+const handleAddItem = () => {
+  state.goodsList.push({
+    sku: '',
+    brand: '',
+    no: '',
+    title: '',
+    spec: '',
+    category: '',
+    source_area: '',
+    price: '',
+    bs: ''
+  })
+}
+
+const handleRemoveItem = (index) => {
+  state.goodsList.splice(index, 1)
+}
+
+const handleCopyItem = (index) => {
+  const copyItem = JSON.parse(JSON.stringify(state.goodsList[index]))
+  state.goodsList.push(copyItem)
+}
+
+const handleSaveItem = (index) => {
+  console.log(index)
+}
 </script>
 
 <style lang="scss" scoped>
-.app-container {
+.add-container {
   padding: 20px;
-  .form-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
 
+  .form-wrapper {
+    .form-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .form-item-label {
+        width: 100px;
+        text-align: right;
+      }
+
+      .form-tips {
+        padding-left: 10px;
+      }
+    }
+  }
+
+  .submit-wrapper {
+    padding: 20px 0;
+  }
+}
+</style>
+
+<style lang="scss">
+.add-container {
+  .form-item {
     .el-input {
       width: 200px;
     }
@@ -276,23 +388,6 @@ const handleSkuEnter = (row, index) => {
     .el-checkbox {
       margin-left: 10px;
     }
-
-    .form-item-label {
-      width: 100px;
-      text-align: right;
-    }
-  }
-}
-</style>
-
-<style lang="scss">
-.form-item {
-  .el-input {
-    width: 200px;
-  }
-
-  .el-checkbox {
-    margin-left: 10px;
   }
 }
 </style>

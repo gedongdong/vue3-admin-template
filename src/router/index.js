@@ -69,49 +69,59 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  // {
+  //   path: '/icon',
+  //   component: Layout,
+  //   name: 'Icons',
+  //   meta: {
+  //     title: 'Icons',
+  //     icon: 'lock',
+  //     roles: ['admin'] // you can set roles in root nav
+  //   },
+  //   children: [
+  //     {
+  //       path: 'index',
+  //       component: () => import('@/views/icons/index.vue'),
+  //       name: 'IconsIndex',
+  //       meta: { title: 'Icons', icon: 'icon', noCache: true, roles: ['dev'] }
+  //     }
+  //   ]
+  // },
   {
-    path: '/icon',
+    path: '/storage',
     component: Layout,
-    name: 'Icons',
-    meta: {
-      title: 'Icons',
-      icon: 'lock',
-      roles: ['admin'] // you can set roles in root nav
-    },
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/icons/index.vue'),
-        name: 'IconsIndex',
-        meta: { title: 'Icons', icon: 'icon', noCache: true, roles: ['dev'] }
-      }
-    ]
-  },
-  {
-    path: '/warehouse',
-    component: Layout,
-    name: 'Warehouse',
+    name: 'Storage',
     meta: {
       title: '入库管理',
       icon: 'icon',
       roles: ['admin'] // you can set roles in root nav
     },
+    redirect: '/storage/storage-add',
     children: [
       {
-        path: 'warehouse-add',
-        component: () => import('@/views/warehouse/add/index.vue'),
-        name: 'WarehouseAdd',
+        path: 'storage-batch',
+        component: () => import('@/views/storage/batch/index.vue'),
+        name: 'StorageBatch',
         meta: {
-          title: '入库操作',
+          title: '入库码批量生产',
           icon: 'icon',
-          roles: ['admin'],
-          affix: true
+          roles: ['admin']
         }
       },
       {
-        path: 'warehouse-fast-add',
-        component: () => import('@/views/warehouse/fast-add/index.vue'),
-        name: 'WarehouseFastAdd',
+        path: 'storage-add',
+        component: () => import('@/views/storage/add/index.vue'),
+        name: 'StorageAdd',
+        meta: {
+          title: '入库操作',
+          icon: 'icon',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'storage-fast-add',
+        component: () => import('@/views/storage/fast-add/index.vue'),
+        name: 'StorageFastAdd',
         meta: {
           title: '快速入库操作',
           icon: 'icon',

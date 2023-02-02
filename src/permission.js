@@ -4,7 +4,7 @@ import { usePermissionStore } from '@/store/permission'
 import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-import { getToken } from './utils/storage' // get token from cookie
+import { getCookies } from './utils/storage' // get token from cookie
 import getPageTitle from './utils/get-page-title'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
@@ -19,7 +19,7 @@ router.beforeEach(async (to, from, next) => {
   document.title = getPageTitle(to.meta.title)
 
   // determine whether the user has logged in
-  const hasToken = getToken()
+  const hasToken = getCookies('Fanqie-Token')
 
   const userStore = useUserStore()
 
@@ -39,7 +39,7 @@ router.beforeEach(async (to, from, next) => {
         try {
           // get user info
           // note: roles must be a object array! such as: ['admin'] or ,['developer','editor']
-          const { roles } = await userStore.getInfo()
+          const roles = userStore.getRoles()
 
           // generate accessible routes map based on roles
           const accessRoutes = await permissionStore.generateRoutes(roles)

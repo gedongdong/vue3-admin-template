@@ -5,7 +5,7 @@
   </div>
 </template>
 
-<script setup name="WarehouseFastAdd">
+<script setup name="StorageFastAdd">
 import { reactive, toRef } from 'vue'
 
 const state = reactive({
