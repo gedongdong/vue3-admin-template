@@ -78,7 +78,7 @@ cd vue3-admin-template
 yarn install
 
 # 本地开发 启动项目
-yarn dev
+yarn serve
 ```
 
 > TIP
